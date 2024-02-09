@@ -29,7 +29,6 @@ int Config::GetDays() {
 std::vector<std::string> Config::GetCities() {
     std::vector<std::string> result;
     for (auto i: cities) {
-        std::cout << i;
         result.push_back(i);
     }
     return result;

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.15)
 
 project(
         labwork7
@@ -14,7 +14,8 @@ endif()
 
 include(FetchContent)
 FetchContent_Declare(
-        cpr GIT_REPOSITORY https://github.com/libcpr/cpr.git
+        cpr
+        GIT_REPOSITORY https://github.com/libcpr/cpr.git
         GIT_TAG 3b15fa82ea74739b574d705fea44959b58142eb8
 )
 FetchContent_MakeAvailable(cpr)

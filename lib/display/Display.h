@@ -5,21 +5,23 @@
 #include <ftxui/screen/screen.hpp>
 #include "ftxui/component/loop.hpp"
 #include <iostream>
-#include "lib/city/City.h"
-#include "lib/days/Days.h"
+#include "city/Days.h"
+#include "city/City.h"
+#include "map"
 
 class Display {
 public:
     Display(std::vector<std::string> names, int days_stored_, size_t frequency_);
-    auto GenerateDayInfo(Day* cur_day, int timeOfDay);
-    auto GenerateDayCard(double temperature, short humidity, size_t weather, double wind_speed);
+    auto GenerateDayCard(Day* day, int index, bool is_cur_day);
     auto DrawCityScreen();
     void DrawScreen();
     ~Display();
 private:
+    void ClearScreen();
+    std::map<int, std::string> part_of_day;
     int kDaysParts = 4;
     int days_stored;
-    size_t current_city = 0;
+    long long current_city = 0;
     size_t frequency;
     size_t amount_of_cities;
     City** cities;

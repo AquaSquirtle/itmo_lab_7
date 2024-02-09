@@ -13,13 +13,9 @@ City::City(const std::string& name_, int days_stored_)
 
 City::~City() {
     for (int i = 0; i < days_stored; ++i) {
-        if (days[i] != nullptr) {
-            delete days[i];
-        }
+        delete days[i];
     }
-    if (cur_day != nullptr) {
-        delete cur_day;
-    }
+    delete cur_day;
     delete[] days;
 }
 
@@ -28,7 +24,7 @@ std::pair<double, double> City::GetCoords() {
     std::string url = "https://api.api-ninjas.com/v1/city?name=" + name;
     cpr::Response rq = cpr::Get(cpr::Url{url}, cpr::Header{{"X-Api-Key","6ZDgLgxbqAP5Rgo6/GwJhQ==ZZr0UpZ94Apt99rb"}});
     if (CheckRequestCode(rq)) {
-        auto rq_json = nlohmann::json::parse(rq.text);
+        nlohmann::json rq_json = nlohmann::json::parse(rq.text);
         return std::make_pair(rq_json[0]["latitude"],rq_json[0]["longitude"]);
     }
     else {
@@ -47,7 +43,7 @@ bool City::GetDays(std::pair<double, double> coords) {
         {"forecast_days", std::to_string(days_stored)}
     });
     if (CheckRequestCode(rq)) {
-        auto rq_json = nlohmann::json::parse(rq.text);
+        nlohmann::json rq_json = nlohmann::json::parse(rq.text);
         UpdateDaysInfo(rq_json);
         UpdateCurDayInfo(rq_json);
         return true;
@@ -55,21 +51,17 @@ bool City::GetDays(std::pair<double, double> coords) {
     return false;
 }
 
-void City::UpdateDaysInfo(const auto data) {
+void City::UpdateDaysInfo(nlohmann::json data) {
     for (int i = 0; i < days_stored; ++i) {
-        std::vector<double> temperature {};
-        std::vector<size_t> weather_code {};
-        std::vector<short> relative_humidity {};
-        std::vector<double> wind_speed {};
+        std::vector<std::string> temperature {};
+        std::vector<int> weather_code {};
+        std::vector<std::string> relative_humidity {};
+        std::vector<std::string> wind_speed {};
         for (int j = 0; j < kHoursInDay/kHours; ++j) {
-            double temp_t = data["hourly"]["temperature_2m"][i*kHoursInDay + j*kHours];;
-            double temp_w = data["hourly"]["wind_speed_10m"][i*kHoursInDay + j*kHours];
-            size_t temp_weather = data["hourly"]["weather_code"][i*kHoursInDay + j*kHours];
-            short temp_rh = data["hourly"]["weather_code"][i*kHoursInDay + j*kHours];
-            weather_code.push_back(temp_weather);
-            temperature.push_back(temp_t);
-            wind_speed.push_back(temp_w);
-            relative_humidity.push_back(temp_rh);
+            weather_code.push_back(data["hourly"]["weather_code"][i*kHoursInDay + j*kHours].get<short>());
+            temperature.push_back(DoubleToString(data["hourly"]["temperature_2m"][i*kHoursInDay + j*kHours].get<double>()));
+            wind_speed.push_back(DoubleToString(data["hourly"]["wind_speed_10m"][i*kHoursInDay + j*kHours].get<double>()));
+            relative_humidity.push_back(std::to_string(data["hourly"]["relative_humidity_2m"][i*kHoursInDay + j*kHours].get<short>()));
         }
         std::string temp = data["hourly"]["time"][i*kHoursInDay];
         temp = temp.substr(0, 10);
@@ -83,19 +75,15 @@ void City::UpdateDaysInfo(const auto data) {
     }
 }
 
-void City::UpdateCurDayInfo(const auto data) {
-    std::vector<double> temperature {};
-    std::vector<size_t> weather_code {};
-    std::vector<short> relative_humidity {};
-    std::vector<double> wind_speed {};
-    double temp_t = data["current"]["temperature_2m"];
-    double temp_w = data["current"]["wind_speed_10m"];
-    size_t temp_weather = data["current"]["weather_code"];
-    short temp_rh = data["current"]["relative_humidity_2m"];
-    weather_code.push_back(temp_weather);
-    temperature.push_back(temp_t);
-    wind_speed.push_back(temp_w);
-    relative_humidity.push_back(temp_rh);
+void City::UpdateCurDayInfo(nlohmann::json data) {
+    std::vector<std::string> temperature {};
+    std::vector<int> weather_code {};
+    std::vector<std::string> relative_humidity {};
+    std::vector<std::string> wind_speed {};
+    weather_code.push_back(data["current"]["weather_code"].get<int>());
+    temperature.push_back(DoubleToString(data["current"]["temperature_2m"].get<double>()));
+    wind_speed.push_back(DoubleToString(data["current"]["wind_speed_10m"].get<double>()));
+    relative_humidity.push_back(std::to_string(data["current"]["relative_humidity_2m"].get<short>()));
 
     std::string temp = data["current"]["time"];
     temp = temp.substr(11, 16);
@@ -114,12 +102,7 @@ bool City::CheckRequestCode(const cpr::Response &rq) {
 
 void City::GetTemperature() {
     std::pair<double, double> coords = GetCoords();
-    if (GetDays(coords)) {
-        std::cout << "success\n";
-    }
-    else {
-        std::cout << "failure\n";
-    }
+    GetDays(coords);
 }
 
 void City::PrintAll() {
@@ -132,7 +115,6 @@ void City::PrintAll() {
 
 Day* City::GetDay(int index) {
     if (index < days_stored) {
-        days[index]->PrintAll();
         return days[index];
     }
     return nullptr;
@@ -144,6 +126,19 @@ std::string City::GetName() {
 
 Day *City::GetCurDay() {
     return cur_day;
+}
+
+std::string City::DoubleToString(double num) {
+    std::ostringstream oss;
+    oss << std::fixed << num;
+    std::string str = oss.str();
+
+    // Удаление ненужных нулей
+    str.erase(str.find_last_not_of('0') + 1, std::string::npos);
+    if (str.back() == '.') {
+        str.pop_back();
+    }
+    return str;
 }
 
 

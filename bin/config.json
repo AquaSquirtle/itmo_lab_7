@@ -1,5 +1,5 @@
 {
-  "city": ["Novosibirsk", "Saint Petersburg"],
-  "frequency": 30,
+  "city": ["Vologda", "Novosibirsk", "Minsk"],
+  "frequency": 60,
   "days_stored": 3
 }
