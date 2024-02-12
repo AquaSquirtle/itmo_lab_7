@@ -9,15 +9,14 @@ class City {
 public:
     City(const std::string& name_, int days_stored_);
     ~City();
-    void GetTemperature();
+    bool GetTemperature(int days_stored_ = 0);
     Day* GetDay(int index);
     Day* GetCurDay();
     std::string GetName();
     void PrintAll();
 private:
     bool CheckRequestCode(const cpr::Response& rq);
-    std::pair<double, double> GetCoords();
-    bool GetDays(std::pair<double, double> coords);
+    bool GetDays();
     void UpdateCurDayInfo(nlohmann::json data);
     void UpdateDaysInfo(nlohmann::json data);
     std::string DoubleToString (double num);

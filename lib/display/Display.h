@@ -19,7 +19,9 @@ public:
 private:
     void ClearScreen();
     std::map<int, std::string> part_of_day;
-    int kDaysParts = 4;
+    const int kDaysParts = 4;
+    const int kMaxDaysStored = 36;
+    bool is_temperature_parsed = false;
     int days_stored;
     long long current_city = 0;
     size_t frequency;

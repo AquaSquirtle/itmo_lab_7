@@ -63,7 +63,10 @@ void Display::DrawScreen() {
     auto screen = ScreenInteractive::TerminalOutput();
     auto renderer = Renderer([&] {
         ClearScreen();
-        return DrawCityScreen();
+        if (is_temperature_parsed) {
+            return DrawCityScreen();
+        }
+        return vbox(text("Bad internet connection") | bold | center);
     });
     renderer |= CatchEvent([&] (const Event& event) {
         std::string cc = event.input();
@@ -73,13 +76,25 @@ void Display::DrawScreen() {
         if (cc == "p") {
             if (current_city - 1 > -1) {
                 current_city -= 1;
-                cities[current_city]->GetTemperature();
+                is_temperature_parsed = cities[current_city]->GetTemperature(days_stored);
             }
         }
         if (cc == "n") {
             if (current_city + 1 < amount_of_cities) {
                 current_city += 1;
-                cities[current_city]->GetTemperature();
+                is_temperature_parsed = cities[current_city]->GetTemperature(days_stored);
+            }
+        }
+        if (cc == "+") {
+            if (days_stored + 1 < kMaxDaysStored) {
+                days_stored += 1;
+                is_temperature_parsed = cities[current_city]->GetTemperature(days_stored);
+            }
+        }
+        if (cc == "-") {
+            if (days_stored - 1 > 0) {
+                days_stored -= 1;
+                is_temperature_parsed = cities[current_city]->GetTemperature(days_stored);
             }
         }
 
@@ -87,14 +102,14 @@ void Display::DrawScreen() {
     });
     Loop loop (&screen, renderer);
     auto start_time = std::chrono::system_clock::now();
-    cities[current_city]->GetTemperature();
+    is_temperature_parsed = cities[current_city]->GetTemperature(days_stored);
 
     while (!loop.HasQuitted()) {
         auto cur_time = std::chrono::system_clock::now();
         if (std::chrono::duration_cast<std::chrono::seconds>(cur_time - start_time).count() > frequency) {
             start_time = cur_time;
-            cities[current_city]->GetTemperature();
-            screen.Post(ftxui::Event::Custom);
+            is_temperature_parsed = cities[current_city]->GetTemperature(days_stored);
+            screen.Post(Event::Custom);
         }
         loop.RunOnce();
     }

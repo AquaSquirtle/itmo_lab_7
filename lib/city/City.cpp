@@ -19,21 +19,15 @@ City::~City() {
     delete[] days;
 }
 
-
-std::pair<double, double> City::GetCoords() {
-    std::string url = "https://api.api-ninjas.com/v1/city?name=" + name;
-    cpr::Response rq = cpr::Get(cpr::Url{url}, cpr::Header{{"X-Api-Key","6ZDgLgxbqAP5Rgo6/GwJhQ==ZZr0UpZ94Apt99rb"}});
-    if (CheckRequestCode(rq)) {
-        nlohmann::json rq_json = nlohmann::json::parse(rq.text);
-        return std::make_pair(rq_json[0]["latitude"],rq_json[0]["longitude"]);
+bool City::GetDays() {
+    std::string coords_url = "https://api.api-ninjas.com/v1/city?name=" + name;
+    cpr::Response coords_rq = cpr::Get(cpr::Url{coords_url}, cpr::Header{{"X-Api-Key","6ZDgLgxbqAP5Rgo6/GwJhQ==ZZr0UpZ94Apt99rb"}});
+    if (!CheckRequestCode(coords_rq)) {
+        return false;
     }
-    else {
-        std::cout << "Failed to execute\n";
-        exit(0);
-    }
-}
+    nlohmann::json coords_json = nlohmann::json::parse(coords_rq.text);
+    std::pair<double, double> coords = std::make_pair(coords_json[0]["latitude"],coords_json[0]["longitude"]);
 
-bool City::GetDays(std::pair<double, double> coords) {
     std::string url = "https://api.open-meteo.com/v1/forecast";
     cpr::Response rq = cpr::Get(cpr::Url{url},cpr::Parameters{
         {"latitude", std::to_string(coords.first)},
@@ -42,13 +36,13 @@ bool City::GetDays(std::pair<double, double> coords) {
         {"current", "temperature_2m,wind_speed_10m,weather_code,relative_humidity_2m"},
         {"forecast_days", std::to_string(days_stored)}
     });
-    if (CheckRequestCode(rq)) {
-        nlohmann::json rq_json = nlohmann::json::parse(rq.text);
-        UpdateDaysInfo(rq_json);
-        UpdateCurDayInfo(rq_json);
-        return true;
+    if (!CheckRequestCode(rq)) {
+        return false;
     }
-    return false;
+    nlohmann::json rq_json = nlohmann::json::parse(rq.text);
+    UpdateDaysInfo(rq_json);
+    UpdateCurDayInfo(rq_json);
+    return true;
 }
 
 void City::UpdateDaysInfo(nlohmann::json data) {
@@ -100,9 +94,12 @@ bool City::CheckRequestCode(const cpr::Response &rq) {
     return rq.status_code == 200;
 }
 
-void City::GetTemperature() {
-    std::pair<double, double> coords = GetCoords();
-    GetDays(coords);
+bool City::GetTemperature(int days_stored_) {
+    days_stored = days_stored_;
+    if (GetDays()) {
+        return true;
+    }
+    return false;
 }
 
 void City::PrintAll() {
