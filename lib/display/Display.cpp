@@ -44,7 +44,7 @@ auto Display::GenerateDayCard(Day* day, int index, bool is_cur_day = false) {
 auto Display::DrawCityScreen() {
     Elements widgets;
     Day* cur_day = cities[current_city]->GetCurDay();
-    widgets.push_back(text("Current weather in " + cities[current_city]->GetName() + " is(" + cur_day->GetData() +  "): " ) | bold | center);
+    widgets.push_back(text("Current weather in " + cities[current_city]->GetName() + " is: " ) | bold | center);
 
     widgets.push_back(GenerateDayCard(cur_day, 0, true));
     for (int i = 0; i < days_stored; ++i) {
@@ -62,6 +62,7 @@ auto Display::DrawCityScreen() {
 void Display::DrawScreen() {
     auto screen = ScreenInteractive::TerminalOutput();
     auto renderer = Renderer([&] {
+        is_temperature_parsed = cities[current_city]->GetTemperature(days_stored);
         ClearScreen();
         if (is_temperature_parsed) {
             return DrawCityScreen();
@@ -69,46 +70,37 @@ void Display::DrawScreen() {
         return vbox(text("Bad internet connection") | bold | center);
     });
     renderer |= CatchEvent([&] (const Event& event) {
-        std::string cc = event.input();
         if (event == Event::Escape) {
             screen.ExitLoopClosure()();
         }
-        if (cc == "p") {
+        else if (event.input() == "p") {
             if (current_city - 1 > -1) {
                 current_city -= 1;
-                is_temperature_parsed = cities[current_city]->GetTemperature(days_stored);
             }
         }
-        if (cc == "n") {
+        else if (event.input() == "n") {
             if (current_city + 1 < amount_of_cities) {
                 current_city += 1;
-                is_temperature_parsed = cities[current_city]->GetTemperature(days_stored);
             }
         }
-        if (cc == "+") {
+        else if (event.input() == "+") {
             if (days_stored + 1 < kMaxDaysStored) {
                 days_stored += 1;
-                is_temperature_parsed = cities[current_city]->GetTemperature(days_stored);
             }
         }
-        if (cc == "-") {
+        else if (event.input() == "-") {
             if (days_stored - 1 > 0) {
                 days_stored -= 1;
-                is_temperature_parsed = cities[current_city]->GetTemperature(days_stored);
             }
         }
-
         return false;
     });
     Loop loop (&screen, renderer);
     auto start_time = std::chrono::system_clock::now();
-    is_temperature_parsed = cities[current_city]->GetTemperature(days_stored);
-
     while (!loop.HasQuitted()) {
         auto cur_time = std::chrono::system_clock::now();
         if (std::chrono::duration_cast<std::chrono::seconds>(cur_time - start_time).count() > frequency) {
             start_time = cur_time;
-            is_temperature_parsed = cities[current_city]->GetTemperature(days_stored);
             screen.Post(Event::Custom);
         }
         loop.RunOnce();
