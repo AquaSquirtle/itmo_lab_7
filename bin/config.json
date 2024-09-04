@@ -1,0 +1,5 @@
+{
+  "city": ["Vologda", "Novosibirsk", "Minsk", "Magadan"],
+  "frequency": 60,
+  "days_stored": 3
+}
